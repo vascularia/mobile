@@ -98,6 +98,14 @@ class BoardPreferences() extends Notifier<BoardPrefs> with PreferencesStorage<Bo
     return save(state.copyWith(board3d: !state.board3d));
   }
 
+  Future<void> setPieceSet3d(PieceSet3d pieceSet3d) {
+    return save(state.copyWith(pieceSet3d: pieceSet3d));
+  }
+
+  Future<void> setBoardTheme3d(BoardTheme3d boardTheme3d) {
+    return save(state.copyWith(boardTheme3d: boardTheme3d));
+  }
+
   Future<void> toggleDimInDarkMode() {
     return save(state.copyWith(dimInDarkMode: !state.dimInDarkMode));
   }
@@ -200,6 +208,10 @@ sealed class const BoardPrefs._() with _$BoardPrefs implements Serializable {
 
     /// Whether the interactive boards are displayed in 3D, tilted in perspective.
     @JsonKey(defaultValue: false) required bool board3d,
+    @JsonKey(defaultValue: PieceSet3d.basic, unknownEnumValue: PieceSet3d.basic)
+    required PieceSet3d pieceSet3d,
+    @JsonKey(defaultValue: BoardTheme3d.woodi, unknownEnumValue: BoardTheme3d.woodi)
+    required BoardTheme3d boardTheme3d,
 
     /// Whether to dim the boards in dark mode, overriding the [brightness] filter.
     ///
@@ -234,6 +246,8 @@ sealed class const BoardPrefs._() with _$BoardPrefs implements Serializable {
     shapeColor: ShapeColor.green,
     showBorder: false,
     board3d: false,
+    pieceSet3d: PieceSet3d.basic,
+    boardTheme3d: BoardTheme3d.woodi,
     dimInDarkMode: true,
     brightness: kBoardDefaultBrightnessFilter,
     contrast: kBoardDefaultContrastFilter,
@@ -300,6 +314,52 @@ enum ShapeColor() {
     ShapeColor.blue => 0x003088,
     ShapeColor.yellow => 0xe68f00,
   }).withAlpha(0xAA);
+}
+
+/// A set of pre-rendered 3D pieces, from the 3D piece sets of lichess.org.
+enum PieceSet3d(final String label, final String folder, {final bool hasFlippedPieces = true}) {
+  basic('Basic', 'Basic'),
+  wood('Wood', 'Wood'),
+  metal('Metal', 'Metal'),
+  redVBlue('Red vs Blue', 'RedVBlue'),
+  modernJade('Modern Jade', 'ModernJade'),
+  modernWood('Modern Wood', 'ModernWood'),
+  glass('Glass', 'Glass'),
+  trimmed('Trimmed', 'Trimmed'),
+  experimental('Experimental', 'Experimental'),
+  staunton('Staunton', 'Staunton', hasFlippedPieces: false);
+
+  /// The path of the image of a piece, by its color and role names as in the file names of lila
+  /// (e.g. `White`, `Knight`).
+  String assetPath(String color, String role, {required bool flipped}) =>
+      'assets/board3d/piece/$folder/$color-$role${flipped && hasFlippedPieces ? '-Flipped' : ''}.webp';
+}
+
+/// A pre-rendered 3D board, from the 3D boards of lichess.org.
+enum BoardTheme3d(final String label, final String file) {
+  woodi('Woodi', 'Woodi'),
+  blackWhiteAluminium('Black-White Aluminium', 'Black-White-Aluminium'),
+  brushedAluminium('Brushed Aluminium', 'Brushed-Aluminium'),
+  chinaBlue('China Blue', 'China-Blue'),
+  chinaGreen('China Green', 'China-Green'),
+  chinaGrey('China Grey', 'China-Grey'),
+  chinaScarlet('China Scarlet', 'China-Scarlet'),
+  chinaYellow('China Yellow', 'China-Yellow'),
+  classicBlue('Classic Blue', 'Classic-Blue'),
+  goldSilver('Gold Silver', 'Gold-Silver'),
+  greenGlass('Green Glass', 'Green-Glass'),
+  lightWood('Light Wood', 'Light-Wood'),
+  powerCoated('Power Coated', 'Power-Coated'),
+  purpleBlack('Purple Black', 'Purple-Black'),
+  rosewood('Rosewood', 'Rosewood'),
+  woodGlass('Wood Glass', 'Wood-Glass'),
+  marble('Marble', 'Marble'),
+  wax('Wax', 'Wax'),
+  jade('Jade', 'Jade');
+
+  String get imagePath => 'assets/board3d/board/$file.webp';
+
+  String get thumbnailPath => 'assets/board3d/board/$file.thumbnail.webp';
 }
 
 /// The chessboard theme.

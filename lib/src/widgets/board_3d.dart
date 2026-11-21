@@ -1,5 +1,6 @@
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
+import 'package:lichess_mobile/src/model/settings/board_preferences.dart';
 import 'package:material_ui/material_ui.dart';
 
 // The 3D board of lichess.org: pre-rendered Staunton board and pieces, laid out on a board grid
@@ -18,20 +19,17 @@ const _kBoardImageTop = -0.007307;
 /// The height of the 3D board image relative to the board grid, in board heights.
 const _kBoardImageHeight = 1.032;
 
-const _kBoardImage = AssetImage('assets/board3d/board/Woodi.webp');
-
-const _kPieceSetPath = 'assets/board3d/piece/Basic';
-
-/// The 3D piece images, for a board seen from the [orientation] side.
+/// The images of the 3D [pieceSet], for a board seen from the [orientation] side.
 ///
 /// The bishops and knights of the opponent are drawn facing the other way, like on lichess.org.
-PieceAssets board3dPieceAssets(Side orientation) => {
+PieceAssets board3dPieceAssets(PieceSet3d pieceSet, Side orientation) => {
   for (final kind in PieceKind.values)
     kind: AssetImage(
-      '$_kPieceSetPath/${kind.side == Side.white ? 'White' : 'Black'}-'
-      '${_roleName(kind.role)}'
-      '${kind.side != orientation && (kind.role == Role.bishop || kind.role == Role.knight) ? '-Flipped' : ''}'
-      '.webp',
+      pieceSet.assetPath(
+        kind.side == Side.white ? 'White' : 'Black',
+        _roleName(kind.role),
+        flipped: kind.side != orientation && (kind.role == Role.bishop || kind.role == Role.knight),
+      ),
     ),
 };
 
@@ -44,17 +42,24 @@ String _roleName(Role role) => switch (role) {
   Role.king => 'King',
 };
 
-/// The [settings] of a board turned to 3D, seen from the [orientation] side.
+/// The [settings] of a board turned to 3D, with the [pieceSet] on the [boardTheme], seen from the
+/// [orientation] side.
 ///
 /// The board must also be flattened vertically by [kBoard3dHeightRatio], see [Board3dTransform].
-ChessboardSettings board3dSettings(ChessboardSettings settings, Side orientation) {
+ChessboardSettings board3dSettings(
+  ChessboardSettings settings, {
+  required PieceSet3d pieceSet,
+  required BoardTheme3d boardTheme,
+  required Side orientation,
+}) {
   final colorScheme = settings.colorScheme;
   final background = _Board3dBackground(
+    image: AssetImage(boardTheme.imagePath),
     lightSquare: colorScheme.lightSquare,
     darkSquare: colorScheme.darkSquare,
   );
   return settings.copyWith(
-    pieceAssets: board3dPieceAssets(orientation),
+    pieceAssets: board3dPieceAssets(pieceSet, orientation),
     pieceRect: kBoard3dPieceRect,
     // The coordinates would be drawn on the flat squares, not on the 3D board image.
     enableCoordinates: false,
@@ -81,8 +86,11 @@ class const Board3dTransform({required final Widget child}) extends StatelessWid
 }
 
 /// The pre-rendered 3D board image, which overflows the board grid a little.
-class const _Board3dBackground({required super.lightSquare, required super.darkSquare})
-    extends ChessboardBackground {
+class const _Board3dBackground({
+  required final AssetImage image,
+  required super.lightSquare,
+  required super.darkSquare,
+}) extends ChessboardBackground {
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -94,7 +102,7 @@ class const _Board3dBackground({required super.lightSquare, required super.darkS
           maxHeight: size * _kBoardImageHeight,
           child: Transform.translate(
             offset: Offset(0, size * _kBoardImageTop),
-            child: const Image(image: _kBoardImage, fit: BoxFit.fill),
+            child: Image(image: image, fit: BoxFit.fill),
           ),
         );
       },

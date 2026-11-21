@@ -117,7 +117,15 @@ class _BoardWidgetState() extends ConsumerState<BoardWidget> {
   @override
   Widget build(BuildContext context) {
     final BoardWidget(:controller, :size, :orientation, :boardOverlay, :error) = widget;
-    final board3d = ref.watch(boardPreferencesProvider.select((prefs) => prefs.board3d));
+    final (:board3d, :pieceSet3d, :boardTheme3d) = ref.watch(
+      boardPreferencesProvider.select(
+        (prefs) => (
+          board3d: prefs.board3d,
+          pieceSet3d: prefs.pieceSet3d,
+          boardTheme3d: prefs.boardTheme3d,
+        ),
+      ),
+    );
     final chessboard = Chessboard(
       key: widget.boardKey,
       controller: controller,
@@ -126,7 +134,14 @@ class _BoardWidgetState() extends ConsumerState<BoardWidget> {
       onMove: widget.onMove,
       shapes: widget.shapes,
       annotations: widget.annotations,
-      settings: board3d ? board3dSettings(widget.settings, orientation) : widget.settings,
+      settings: board3d
+          ? board3dSettings(
+              widget.settings,
+              pieceSet: pieceSet3d,
+              boardTheme: boardTheme3d,
+              orientation: orientation,
+            )
+          : widget.settings,
     );
 
     // Chessground handles raw pointer events and doesn't enter the gesture arena.

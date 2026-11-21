@@ -128,6 +128,15 @@ flutter:
     - assets/board-thumbnails/
     - assets/board3d/board/
     - assets/board3d/piece/Basic/
+    - assets/board3d/piece/Wood/
+    - assets/board3d/piece/Metal/
+    - assets/board3d/piece/RedVBlue/
+    - assets/board3d/piece/ModernJade/
+    - assets/board3d/piece/ModernWood/
+    - assets/board3d/piece/Glass/
+    - assets/board3d/piece/Trimmed/
+    - assets/board3d/piece/Experimental/
+    - assets/board3d/piece/Staunton/
     - assets/maia/
     - assets/positions.json
     - assets/endgames.json

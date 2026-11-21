@@ -14,6 +14,7 @@ import 'package:lichess_mobile/src/utils/l10n_context.dart';
 import 'package:lichess_mobile/src/utils/navigation.dart';
 import 'package:lichess_mobile/src/utils/screen.dart';
 import 'package:lichess_mobile/src/view/settings/background_theme_choice_screen.dart';
+import 'package:lichess_mobile/src/view/settings/board_3d_choice_screen.dart';
 import 'package:lichess_mobile/src/view/settings/board_choice_screen.dart';
 import 'package:lichess_mobile/src/view/settings/color_scheme_debug_screen.dart';
 import 'package:lichess_mobile/src/view/settings/piece_set_screen.dart';
@@ -248,12 +249,30 @@ class _BodyState() extends ConsumerState<_Body> {
                     ),
                     SwitchSettingTile(
                       leading: const Icon(Icons.view_in_ar),
-                      title: const Text('3D board'),
+                      title: const Text('3D mode'),
                       value: boardPrefs.board3d,
                       onChanged: (value) {
                         ref.read(boardPreferencesProvider.notifier).toggleBoard3d();
                       },
                     ),
+                    if (boardPrefs.board3d) ...[
+                      SettingsListTile(
+                        icon: const Icon(LichessIcons.chess_pawn),
+                        settingsLabel: const Text('3D pieces'),
+                        settingsValue: boardPrefs.pieceSet3d.label,
+                        onTap: () {
+                          Navigator.of(context).push(PieceSet3dScreen.buildRoute());
+                        },
+                      ),
+                      SettingsListTile(
+                        icon: const Icon(LichessIcons.chess_board),
+                        settingsLabel: const Text('3D board'),
+                        settingsValue: boardPrefs.boardTheme3d.label,
+                        onTap: () {
+                          Navigator.of(context).push(BoardTheme3dScreen.buildRoute());
+                        },
+                      ),
+                    ],
                   ],
                 ),
                 ListSection(
