@@ -196,10 +196,9 @@ packages:
   chessground:
     dependency: "direct main"
     description:
-      name: chessground
-      sha256: "5e5dd75413f683c2969be9352f9874280f685e11fb850baf5b59f8b5b330ca32"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../chessground3d"
+      relative: true
+    source: path
     version: "11.1.0"
   clock:
     dependency: "direct main"
@@ -1877,4 +1876,4 @@ packages:
     version: "3.1.4"
 sdks:
   dart: ">=3.14.0 <4.0.0"
-  flutter: "3.50.0"
+  flutter: ">=3.50.0"
