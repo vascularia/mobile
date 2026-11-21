@@ -72,6 +72,9 @@ extension _PracticeCommentDisplay on PracticeComment {
   Color get color => verdict.color;
 }
 
+/// The opponent of a beginner, see [OfflineComputerGameScreen.beginnerQuickStart].
+const kBeginnerOpponent = StockfishOpponentSpec(StockfishLevel.level1);
+
 class const OfflineComputerGameScreen({
   /// Optional initial variant to be preselected in the "New Game" dialog.
   ///
@@ -80,11 +83,23 @@ class const OfflineComputerGameScreen({
 
   /// Optional initial FEN to start the game from a custom position.
   final String? initialFen,
+
+  /// Whether a new game starts right away with the [kBeginnerOpponent] (beginner mode of the home
+  /// screen), instead of opening the "New Game" dialog.
+  final bool beginnerQuickStart = false,
   super.key,
 }) extends ConsumerWidget {
-  static Route<void> buildRoute({Variant? initialVariant, String? initialFen}) {
+  static Route<void> buildRoute({
+    Variant? initialVariant,
+    String? initialFen,
+    bool beginnerQuickStart = false,
+  }) {
     return buildScreenRoute(
-      screen: OfflineComputerGameScreen(initialVariant: initialVariant, initialFen: initialFen),
+      screen: OfflineComputerGameScreen(
+        initialVariant: initialVariant,
+        initialFen: initialFen,
+        beginnerQuickStart: beginnerQuickStart,
+      ),
     );
   }
 
@@ -114,13 +129,20 @@ class const OfflineComputerGameScreen({
           ),
         ],
       ),
-      body: _Body(initialVariant: initialVariant, initialFen: initialFen),
+      body: _Body(
+        initialVariant: initialVariant,
+        initialFen: initialFen,
+        beginnerQuickStart: beginnerQuickStart,
+      ),
     );
   }
 }
 
-class const _Body({required final Variant? initialVariant, final String? initialFen})
-    extends ConsumerStatefulWidget {
+class const _Body({
+  required final Variant? initialVariant,
+  final String? initialFen,
+  final bool beginnerQuickStart = false,
+}) extends ConsumerStatefulWidget {
   @override
   ConsumerState<_Body> createState() => _BodyState();
 }
@@ -145,9 +167,25 @@ class _BodyState() extends ConsumerState<_Body> {
         ref.read(offlineComputerGameControllerProvider.notifier).loadGame(savedGame);
       } else {
         if (!mounted) return;
-        _showNewGameDialog(initialVariant: widget.initialVariant);
+        if (widget.beginnerQuickStart) {
+          _startBeginnerGame();
+        } else {
+          _showNewGameDialog(initialVariant: widget.initialVariant);
+        }
       }
     });
+  }
+
+  /// Starts a game for a beginner: the easiest computer, white pieces, no clock, and takebacks.
+  void _startBeginnerGame() {
+    ref
+        .read(offlineComputerGameControllerProvider.notifier)
+        .startNewGame(
+          opponentSpec: kBeginnerOpponent,
+          playerSide: Side.white,
+          casual: true,
+          practiceMode: false,
+        );
   }
 
   Future<void> _saveGameState() async {
@@ -182,7 +220,11 @@ class _BodyState() extends ConsumerState<_Body> {
                 game: newGameState.game,
                 onNewGame: () {
                   Navigator.pop(context);
-                  _showNewGameDialog(initialVariant: gameState.game.meta.variant);
+                  if (widget.beginnerQuickStart) {
+                    _startBeginnerGame();
+                  } else {
+                    _showNewGameDialog(initialVariant: gameState.game.meta.variant);
+                  }
                 },
                 onAnalysis: (options) =>
                     Navigator.of(this.context).push(AnalysisScreen.buildRoute(options)),

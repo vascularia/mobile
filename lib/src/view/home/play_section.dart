@@ -62,7 +62,8 @@ class const PlaySection() extends ConsumerWidget {
     final isOnline = ref.watch(lichessConnectionStatusProvider) == LichessConnectionStatus.online;
 
     void playAgainstComputer() {
-      Navigator.of(context).pushHidingTabBar(OfflineComputerGameScreen.buildRoute());
+      Navigator.of(context)
+          .pushHidingTabBar(OfflineComputerGameScreen.buildRoute(beginnerQuickStart: !proMode));
     }
 
     if (proMode) {

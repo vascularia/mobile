@@ -79,6 +79,33 @@ void main() {
       fakeEngine = LegalMoveEngine();
     });
 
+    testWidgets('beginner quick start: no dialog, an easy game with white starts', (tester) async {
+      final gameStorage = MockOfflineComputerGameStorage();
+      when(() => gameStorage.fetchGame()).thenAnswer((_) async => null);
+
+      final app = await makeTestProviderScopeApp(
+        tester,
+        home: const OfflineComputerGameScreen(beginnerQuickStart: true),
+        overrides: {
+          offlineComputerGameStorageProvider: offlineComputerGameStorageProvider.overrideWith(
+            (_) => gameStorage,
+          ),
+        },
+      );
+      await tester.pumpWidget(app);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(OpponentSettings), findsNothing);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(OfflineComputerGameScreen)),
+      );
+      final state = container.read(offlineComputerGameControllerProvider);
+      expect(state.game.opponentSpec, kBeginnerOpponent);
+      expect(state.game.youAre, Side.white);
+      expect(state.game.casual, isTrue);
+      expect(state.game.practiceMode, isFalse);
+    });
+
     testWidgets('New game dialog is shown on startup with all options', (tester) async {
       final gameStorage = MockOfflineComputerGameStorage();
       when(() => gameStorage.fetchGame()).thenAnswer((_) async => null);
