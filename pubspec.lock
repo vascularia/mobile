@@ -196,9 +196,11 @@ packages:
   chessground:
     dependency: "direct main"
     description:
-      path: "../chessground3d"
-      relative: true
-    source: path
+      path: "."
+      ref: board-3d
+      resolved-ref: "2ebdb59823e6f8990f7dc6bc1059c349298f6da2"
+      url: "https://github.com/vascularia/flutter-chessground.git"
+    source: git
     version: "11.1.0"
   clock:
     dependency: "direct main"
