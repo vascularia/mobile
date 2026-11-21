@@ -298,6 +298,11 @@ bool shouldRetryOn429(BaseResponse response) {
 Duration _defaultDelay(int retryCount) =>
     const Duration(milliseconds: 900) * math.pow(1.5, retryCount);
 
+/// Tells the lichess.org servers that the requests come from Échecs 3D, a fork of Lichess Mobile.
+///
+/// It is appended to the device info, so the user-agent keeps the format the server parses.
+const _kForkName = 'Echecs3D-fork';
+
 final userAgentProvider = Provider<String>((Ref ref) {
   final user = ref.watch(authControllerProvider.select((value) => value?.user));
 
@@ -314,9 +319,9 @@ String makeUserAgent(PackageInfo info, BaseDeviceInfo deviceInfo, String sri, Li
   final base = 'Lichess Mobile/${info.version} as:${user?.id ?? 'anon'} sri:$sri';
 
   if (deviceInfo is AndroidDeviceInfo) {
-    return '$base os:Android/${deviceInfo.version.release} dev:${deviceInfo.model}';
+    return '$base os:Android/${deviceInfo.version.release} dev:${deviceInfo.model} $_kForkName';
   } else if (deviceInfo is IosDeviceInfo) {
-    return '$base os:iOS/${deviceInfo.systemVersion} dev:${deviceInfo.model}';
+    return '$base os:iOS/${deviceInfo.systemVersion} dev:${deviceInfo.model} $_kForkName';
   }
 
   return base;
