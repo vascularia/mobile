@@ -24,7 +24,6 @@ import 'package:lichess_mobile/src/model/tournament/tournament.dart';
 import 'package:lichess_mobile/src/model/tournament/tournament_providers.dart';
 import 'package:lichess_mobile/src/model/user/user.dart';
 import 'package:lichess_mobile/src/network/connectivity.dart';
-import 'package:lichess_mobile/src/styles/lichess_icons.dart';
 import 'package:lichess_mobile/src/styles/styles.dart';
 import 'package:lichess_mobile/src/tab_navigation.dart';
 import 'package:lichess_mobile/src/utils/focus_detector.dart';
@@ -32,7 +31,6 @@ import 'package:lichess_mobile/src/utils/image.dart';
 import 'package:lichess_mobile/src/utils/l10n_context.dart';
 import 'package:lichess_mobile/src/utils/navigation.dart';
 import 'package:lichess_mobile/src/utils/screen.dart';
-import 'package:lichess_mobile/src/view/account/account_menu.dart';
 import 'package:lichess_mobile/src/view/account/profile_screen.dart';
 import 'package:lichess_mobile/src/view/auth/sign_in_error.dart';
 import 'package:lichess_mobile/src/view/auth/sign_in_options.dart';
@@ -43,15 +41,14 @@ import 'package:lichess_mobile/src/view/game/offline_correspondence_games_screen
 import 'package:lichess_mobile/src/view/home/blog_carousel.dart';
 import 'package:lichess_mobile/src/view/home/following_carousel.dart';
 import 'package:lichess_mobile/src/view/home/games_carousel.dart';
+import 'package:lichess_mobile/src/view/home/play_section.dart';
 import 'package:lichess_mobile/src/view/message/conversation_screen.dart';
 import 'package:lichess_mobile/src/view/play/ongoing_games_screen.dart';
-import 'package:lichess_mobile/src/view/play/play_bottom_sheet.dart';
 import 'package:lichess_mobile/src/view/play/play_menu.dart';
 import 'package:lichess_mobile/src/view/play/quick_game_matrix.dart';
+import 'package:lichess_mobile/src/view/settings/settings_screen.dart';
 import 'package:lichess_mobile/src/view/tournament/tournament_list_screen.dart';
-import 'package:lichess_mobile/src/view/user/challenge_requests_screen.dart';
 import 'package:lichess_mobile/src/view/user/recent_games.dart';
-import 'package:lichess_mobile/src/widgets/buttons.dart';
 import 'package:lichess_mobile/src/widgets/feedback.dart';
 import 'package:lichess_mobile/src/widgets/haptic_refresh_indicator.dart';
 import 'package:lichess_mobile/src/widgets/list.dart';
@@ -166,10 +163,15 @@ class _HomeScreenState() extends ConsumerState<HomeTabScreen> {
             final hasServerContent = isOnline && !isServerUnavailable;
             final showOutage = isServerUnavailable && !widget.editModeEnabled;
 
+            // Échecs 3D only shows the server-backed widgets in the edit mode, where they can be
+            // enabled.
+            final showServerWidgets = hasServerContent && widget.editModeEnabled;
+            // Still loaded outside the edit mode, though not shown: a failed request is what tells
+            // the home screen that the server is down.
             final featuredTournaments = hasServerContent
                 ? ref.watch(featuredTournamentsProvider)
                 : const AsyncValue.data(IListConst<LightTournament>([]));
-            final blogPosts = hasServerContent
+            final blogPosts = showServerWidgets
                 ? ref.watch(blogCarouselProvider)
                 : const AsyncValue.data(IListConst<BlogPost>([]));
             final followingAsync = authUser != null && hasServerContent
@@ -390,6 +392,20 @@ class _HomeScreenState() extends ConsumerState<HomeTabScreen> {
               ];
             }
 
+            // Échecs 3D: the ways to play first, then the games of the user. No sign in (a fork can't
+            // sign in to lichess.org), blog or tournaments.
+            if (!widget.editModeEnabled) {
+              final hasOngoingGames =
+                  hasServerContent &&
+                  ongoingGames.maybeWhen(data: (data) => data.isNotEmpty, orElse: () => false);
+              widgets = [
+                if (showOutage) const ServerOutageDisplay(),
+                const PlaySection(),
+                if (hasOngoingGames) _OngoingGamesCarousel(ongoingGames, maxGamesToShow: 20),
+                RecentGamesWidget(recentGames: recentGames, nbOfGames: nbOfGames, user: null),
+              ];
+            }
+
             final content = ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               controller: homeScrollController,
@@ -423,10 +439,31 @@ class _HomeScreenState() extends ConsumerState<HomeTabScreen> {
                           automaticallyImplyLeading: false,
                         )
                       : PlatformAppBar(
-                          // A greeting without a name when logged out.
-                          title: _GreetingWidget(authUser?.user, isOnline: isOnline),
+                          title: Column(
+                            mainAxisSize: .min,
+                            crossAxisAlignment: .start,
+                            children: [
+                              const Text('Échecs 3D', maxLines: 1),
+                              if (!isOnline)
+                                Text(
+                                  context.l10n.noNetwork,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextTheme.of(context).bodySmall
+                                      ?.copyWith(color: textShade(context, Styles.subtitleOpacity)),
+                                ),
+                            ],
+                          ),
                           centerTitle: false,
-                          actions: const [_ChallengeScreenButton(), AccountMenuButton()],
+                          actions: [
+                            const HomeModeToggle(),
+                            IconButton(
+                              icon: const Icon(Icons.settings_outlined),
+                              tooltip: context.l10n.settingsSettings,
+                              onPressed: () =>
+                                  Navigator.of(context).push(SettingsScreen.buildRoute()),
+                            ),
+                          ],
                         ),
                   body: widget.editModeEnabled
                       ? content
@@ -438,9 +475,8 @@ class _HomeScreenState() extends ConsumerState<HomeTabScreen> {
                           onRefresh: () => _refreshData(isOnline: true),
                           child: content,
                         ),
-                  floatingActionButton: widget.editModeEnabled || isTablet
-                      ? null
-                      : const FloatingPlayButton(),
+                  // The ways to play are at the top of the home screen.
+                  floatingActionButton: null,
                 ),
               ),
             );
@@ -587,82 +623,6 @@ class const _EditableWidget({
         : widget.alwaysEnabled || isEnabled
         ? child
         : const SizedBox.shrink();
-  }
-}
-
-class _IsDayTimeNotifier() extends Notifier<bool> {
-  Timer? _timer;
-
-  @override
-  bool build() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
-      ref.invalidateSelf();
-    });
-
-    ref.onDispose(() {
-      _timer?.cancel();
-    });
-
-    final hour = DateTime.now().hour;
-    return hour >= 6 && hour < 18; // Daytime is between 6 AM and 6 PM
-  }
-}
-
-final _isDayTimeProvider = NotifierProvider.autoDispose<_IsDayTimeNotifier, bool>(
-  _IsDayTimeNotifier.new,
-  name: '_isDayTimeProvider',
-);
-
-/// The greeting of the user, as the app bar title, which opens the profile when logged in.
-/// The greeting of the home app bar, with an "Offline" subtitle while the device is offline.
-class const _GreetingWidget(
-  /// Null when logged out: the greeting has no name.
-  final LightUser? user, {
-  required final bool isOnline,
-}) extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDayTime = ref.watch(_isDayTimeProvider);
-    final user = this.user;
-    final text = user != null
-        ? (isDayTime ? context.l10n.mobileGoodDay : context.l10n.mobileGoodEvening)(user.name)
-        : isDayTime
-        ? context.l10n.mobileGoodDayWithoutName
-        : context.l10n.mobileGoodEveningWithoutName;
-    final greeting = '${isDayTime ? '☀️' : '🌙'} $text';
-
-    void openProfile() {
-      Navigator.of(context).push(ProfileScreen.buildRoute());
-    }
-
-    return InkWell(
-      onTap: user != null ? openProfile : null,
-      borderRadius: const BorderRadius.all(Radius.circular(8.0)),
-      child: Column(
-        mainAxisSize: .min,
-        crossAxisAlignment: .start,
-        children: [
-          Text(
-            greeting,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            // On iOS, smaller than the large title of the other tabs, so that the greeting fits.
-            style: Theme.of(context).platform == TargetPlatform.iOS
-                ? TextTheme.of(context).titleLarge
-                : null,
-          ),
-          if (!isOnline)
-            Text(
-              context.l10n.noNetwork,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextTheme.of(context).bodySmall
-                  ?.copyWith(color: textShade(context, Styles.subtitleOpacity)),
-            ),
-        ],
-      ),
-    );
   }
 }
 
@@ -875,42 +835,6 @@ class const PreviewGameList<T>({
           for (final data in list.take(maxGamesToShow)) builder(data),
         ],
       ),
-    );
-  }
-}
-
-class const _ChallengeScreenButton() extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authUser = ref.watch(authControllerProvider);
-    if (authUser == null) {
-      return const SizedBox.shrink();
-    }
-    // The home tab shows the outage message, so it is clear why this is
-    // disabled when the server is down.
-    final connectionStatus = ref.watch(lichessConnectionStatusProvider);
-    final challenges = ref.watch(challengesProvider);
-
-    final inwardCount = challenges.value?.inward.length ?? 0;
-    final outwardCount = challenges.value?.outward.length ?? 0;
-
-    if (inwardCount == 0 && outwardCount == 0) {
-      return const SizedBox.shrink();
-    }
-
-    return SemanticIconButton(
-      icon: Badge.count(
-        count: inwardCount,
-        isLabelVisible: inwardCount > 0,
-        child: const Icon(LichessIcons.crossed_swords, size: 18.0),
-      ),
-      semanticsLabel: context.l10n.preferencesNotifyChallenge,
-      onPressed: connectionStatus != LichessConnectionStatus.online
-          ? null
-          : () {
-              ref.invalidate(challengesProvider);
-              Navigator.of(context).push(ChallengeRequestsScreen.buildRoute());
-            },
     );
   }
 }

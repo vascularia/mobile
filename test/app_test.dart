@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 import 'package:lichess_mobile/l10n/l10n.dart';
 import 'package:lichess_mobile/src/app.dart';
+import 'package:lichess_mobile/src/model/auth/auth_controller.dart';
 import 'package:lichess_mobile/src/model/settings/general_preferences.dart';
 import 'package:lichess_mobile/src/model/settings/preferences_storage.dart';
 import 'package:lichess_mobile/src/network/http.dart';
@@ -75,20 +77,12 @@ void main() {
     // wait for the startup requests and animations to complete
     await tester.pumpAndSettle(const Duration(milliseconds: 100));
 
-    // should see welcome message
-    expect(
-      find.text(
-        'Lichess is a free (really), libre, no-ads, open source chess server.',
-        findRichText: true,
-      ),
-      findsOneWidget,
-    );
-
     // should have made a request to test the token
     expect(tokenTestRequests, 1);
 
-    // authUser is not active anymore
-    expect(find.text('Sign in'), findsOneWidget);
+    // authUser is not active anymore (Échecs 3D has no sign in button to look for)
+    final container = ProviderScope.containerOf(tester.element(find.byType(HomeTabScreen)));
+    expect(container.read(authControllerProvider), isNull);
   }, variant: kPlatformVariant);
 
   testWidgets('Bottom navigation', variant: kPlatformVariant, (tester) async {

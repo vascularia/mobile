@@ -43,6 +43,10 @@ class HomePreferences() extends Notifier<HomePrefs> with SessionPreferencesStora
     return save(newState);
   }
 
+  Future<void> setProMode(bool proMode) {
+    return save(state.copyWith(proMode: proMode));
+  }
+
   Future<void> setTimeControlConfig({
     required IList<TimeIncrement> disabledTimeControls,
     required bool customButtonEnabled,
@@ -69,6 +73,10 @@ sealed class HomePrefs with _$HomePrefs implements Serializable {
     @_TimeIncrementIListConverter()
     IList<TimeIncrement> disabledTimeControls,
     @Default(true) bool customButtonEnabled,
+
+    /// Whether the home screen shows all the time controls (pro mode), instead of the two big
+    /// buttons of the beginner mode.
+    @Default(false) bool proMode,
   }) = _HomePrefs;
 
   static const defaults = HomePrefs(disabledWidgets: _defaultList);
