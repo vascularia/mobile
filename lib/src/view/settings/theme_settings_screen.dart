@@ -246,6 +246,14 @@ class _BodyState() extends ConsumerState<_Body> {
                         ref.read(boardPreferencesProvider.notifier).toggleBorder();
                       },
                     ),
+                    SwitchSettingTile(
+                      leading: const Icon(Icons.view_in_ar),
+                      title: const Text('3D board'),
+                      value: boardPrefs.board3d,
+                      onChanged: (value) {
+                        ref.read(boardPreferencesProvider.notifier).toggleBoard3d();
+                      },
+                    ),
                   ],
                 ),
                 ListSection(

@@ -121,6 +121,8 @@ flutter:
     - assets/sounds/standard/
     - assets/sounds/sfx/
     - assets/board-thumbnails/
+    - assets/board3d/board/
+    - assets/board3d/piece/Basic/
     - assets/maia/
     - assets/positions.json
     - assets/endgames.json

@@ -28,6 +28,7 @@ Files | Author(s) | License
 --- | --- | ---
 Fontawesome in assets/fonts | [davegandy](https://fontawesome.com) | [SIL OFL 1.1](https://opensource.org/licenses/OFL-1.1)
 assets/images/learn/pieces | Thibault Duplessis and [Colin M.L. Burnett](https://en.wikipedia.org/wiki/User:Cburnett) | [GPLv2+](https://www.gnu.org/licenses/gpl-2.0.txt)
+assets/board3d | [James Clarke](https://github.com/clarkerubber/Staunton-Pieces), via [lila](https://github.com/lichess-org/lila/tree/master/public/images/staunton) | [MIT](https://github.com/clarkerubber/Staunton-Pieces/blob/master/LICENSE.md)
 assets/images/learn/*.webp | [game-icons.net](https://game-icons.net/about.html) | [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/) (Rasterized from the lila SVGs)
 
 External services

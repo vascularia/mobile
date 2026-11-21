@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:chessground/chessground.dart';
 import 'package:dartchess/dartchess.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lichess_mobile/src/model/common/chess.dart';
 import 'package:lichess_mobile/src/model/settings/board_preferences.dart';
 import 'package:lichess_mobile/src/widgets/android_gesture_exclusion.dart';
+import 'package:lichess_mobile/src/widgets/board_3d.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// A widget that displays an interactive chessboard driven by a [ChessboardController].
@@ -32,16 +34,16 @@ class const BoardWidget({
   final Widget? boardOverlay,
   final String? error,
   final GlobalKey? boardKey,
-}) extends StatefulWidget {
+}) extends ConsumerStatefulWidget {
   @override
-  State<BoardWidget> createState() => _BoardWidgetState();
+  ConsumerState<BoardWidget> createState() => _BoardWidgetState();
 }
 
 /// The width of the strip along the leading edge of the screen where the iOS back swipe starts
 /// (the private `_kBackGestureWidth` of the Cupertino page route), not counting the view padding.
 const _kBackGestureWidth = 20.0;
 
-class _BoardWidgetState() extends State<BoardWidget> {
+class _BoardWidgetState() extends ConsumerState<BoardWidget> {
   /// Claims the pointers that touch down beside the board, see [_claimSideMarginPointer].
   final _sideMarginRecognizer = EagerGestureRecognizer();
 
@@ -115,6 +117,7 @@ class _BoardWidgetState() extends State<BoardWidget> {
   @override
   Widget build(BuildContext context) {
     final BoardWidget(:controller, :size, :orientation, :boardOverlay, :error) = widget;
+    final board3d = ref.watch(boardPreferencesProvider.select((prefs) => prefs.board3d));
     final chessboard = Chessboard(
       key: widget.boardKey,
       controller: controller,
@@ -123,13 +126,13 @@ class _BoardWidgetState() extends State<BoardWidget> {
       onMove: widget.onMove,
       shapes: widget.shapes,
       annotations: widget.annotations,
-      settings: widget.settings,
+      settings: board3d ? board3dSettings(widget.settings, orientation) : widget.settings,
     );
 
     // Chessground handles raw pointer events and doesn't enter the gesture arena.
     // We use a RawGestureDetector to claim the pointer events for the board, so that they don't
     // trigger a swipe gesture to pop the screen on iOS.
-    final board = RawGestureDetector(
+    final gestureBoard = RawGestureDetector(
       gestures: {
         _BoardPointerClaimRecognizer:
             GestureRecognizerFactoryWithHandlers<_BoardPointerClaimRecognizer>(
@@ -146,6 +149,9 @@ class _BoardWidgetState() extends State<BoardWidget> {
             )
           : chessboard,
     );
+
+    // Hit tests go through the 3D transform, so the touched squares match what is displayed.
+    final board = board3d ? Board3dTransform(child: gestureBoard) : gestureBoard;
 
     final overlay = boardOverlay ?? (error != null ? _ErrorWidget(errorMessage: error) : null);
 

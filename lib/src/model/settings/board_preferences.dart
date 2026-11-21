@@ -94,6 +94,10 @@ class BoardPreferences() extends Notifier<BoardPrefs> with PreferencesStorage<Bo
     return save(state.copyWith(showBorder: !state.showBorder));
   }
 
+  Future<void> toggleBoard3d() {
+    return save(state.copyWith(board3d: !state.board3d));
+  }
+
   Future<void> toggleDimInDarkMode() {
     return save(state.copyWith(dimInDarkMode: !state.dimInDarkMode));
   }
@@ -194,6 +198,9 @@ sealed class const BoardPrefs._() with _$BoardPrefs implements Serializable {
     required ShapeColor shapeColor,
     @JsonKey(defaultValue: false) required bool showBorder,
 
+    /// Whether the interactive boards are displayed in 3D, tilted in perspective.
+    @JsonKey(defaultValue: false) required bool board3d,
+
     /// Whether to dim the boards in dark mode, overriding the [brightness] filter.
     ///
     /// On for new installs ([defaults]), off for stored preferences that predate the setting.
@@ -226,6 +233,7 @@ sealed class const BoardPrefs._() with _$BoardPrefs implements Serializable {
     dragTargetKind: DragTargetKind.circle,
     shapeColor: ShapeColor.green,
     showBorder: false,
+    board3d: false,
     dimInDarkMode: true,
     brightness: kBoardDefaultBrightnessFilter,
     contrast: kBoardDefaultContrastFilter,
@@ -252,7 +260,8 @@ sealed class const BoardPrefs._() with _$BoardPrefs implements Serializable {
       brightness: effectiveBrightness(appBrightness),
       contrast: contrast,
       hue: hue,
-      border: showBorder
+      // The 3D board image has its own border.
+      border: showBorder && !board3d
           ? BoardBorder(color: darken(boardTheme.colors.darkSquare, 0.2), width: 16.0)
           : null,
       showValidMoves: showLegalMoves,
