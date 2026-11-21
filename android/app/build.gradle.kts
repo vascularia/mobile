@@ -58,7 +58,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            // Without a key.properties file (Échecs 3D has no release key yet), sign with the debug
+            // key, so that a release APK can still be built and installed.
+            signingConfig = signingConfigs.getByName(
+                if (keystorePropertiesFile.exists()) "release" else "debug"
+            )
         }
         debug {
             applicationIdSuffix = ".debug"
